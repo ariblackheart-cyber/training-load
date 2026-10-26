@@ -35,6 +35,32 @@ const Core = (() => {
     const km = r.distance_m ? " " + (Math.round(r.distance_m / 100) / 10).toLocaleString("id-ID") + " km" : "";
     return (r.treadmill ? "Treadmill " : "Lari ") + part + km;
   }
+  /* ---------- Zona detak jantung ---------- */
+  const ZONE_INFO = [
+    { n: 1, name: "Pemulihan", desc: "Jalan cepat, jogging sangat pelan, pendinginan" },
+    { n: 2, name: "Aerobik / easy", desc: "Easy run dan long run; napas tenang, masih bisa ngobrol" },
+    { n: 3, name: "Tempo", desc: "Lari sedang-berat; bicara hanya per kalimat" },
+    { n: 4, name: "Ambang (threshold)", desc: "Kuat ditahan sekitar 20–60 menit; latihan threshold" },
+    { n: 5, name: "Maksimal / VO2max", desc: "Interval pendek dan sprint; hanya beberapa menit" }
+  ];
+  // batas bawah tiap zona dalam bpm (zona 1..5) + batas atas zona 5
+  function zones(method, p) {
+    const max = p.hrMax, rest = p.hrRest, lt = p.lthr;
+    let lows;
+    if (method === "lthr" && lt) lows = [0.75, 0.85, 0.90, 0.95, 1.00].map(f => Math.round(lt * f));   // Joe Friel (lari), Z1 mulai 75% LTHR
+    else if (method === "hrr") lows = [0.50, 0.60, 0.70, 0.80, 0.90].map(f => Math.round(rest + (max - rest) * f)); // Karvonen
+    else lows = [0.50, 0.60, 0.70, 0.80, 0.90].map(f => Math.round(max * f));                          // % HR maks
+    return ZONE_INFO.map((z, i) => ({ ...z, lo: lows[i], hi: i < 4 ? lows[i + 1] - 1 : max }));
+  }
+  function zoneOf(hr, zs) { if (!hr) return null; for (let i = zs.length - 1; i >= 0; i--) if (hr >= zs[i].lo) return zs[i].n; return 1; }
+  // perkiraan LTHR: HR rata-rata tertinggi dari lari 20–70 menit dalam 6 bulan terakhir
+  function estLthr(runs, p, today) {
+    const since = +today - 183 * DAY;
+    const c = runs.filter(r => r.avg_hr && r.duration_s >= 1200 && r.duration_s <= 4200 && +new Date(r.started_at) >= since && !r.treadmill)
+      .sort((a, b) => b.avg_hr - a.avg_hr)[0];
+    if (!c || c.avg_hr < p.hrRest + (p.hrMax - p.hrRest) * 0.7) return null;
+    return { lthr: Math.min(c.avg_hr, p.hrMax - 5), run: c };
+  }
   function runLoad(r, p) {
     if (r.avg_hr) return trimp(r.duration_s, r.avg_hr, p);
     if (r.rpe) return trimp(r.duration_s, Math.round(p.hrRest + (p.hrMax - p.hrRest) * (0.45 + r.rpe * 0.05)), p);
@@ -236,6 +262,6 @@ const Core = (() => {
     return { score, level, parts, advice, filled: true, coverage: w };
   }
 
-  return { LEVELS, DAY, dayKey, fromKey, toMinute, trimp, runLoad, estRpe, autoTitle, parseGarminCsv, fitToRun, parseJournal, loadStatus, weeklySeries, readiness, num, hms };
+  return { LEVELS, ZONE_INFO, zones, zoneOf, estLthr, DAY, dayKey, fromKey, toMinute, trimp, runLoad, estRpe, autoTitle, parseGarminCsv, fitToRun, parseJournal, loadStatus, weeklySeries, readiness, num, hms };
 })();
 if (typeof module !== "undefined") module.exports = Core;

@@ -9,8 +9,14 @@ create table if not exists public.sl_profile (
   hr_max     smallint not null default 190 check (hr_max between 120 and 230),
   hr_rest    smallint check (hr_rest between 30 and 100),          -- kosong = otomatis dari check-in
   sex        text not null default 'L' check (sex in ('L','P')),    -- faktor TRIMP Banister
+  lthr       smallint check (lthr between 100 and 220),             -- ambang laktat (opsional)
+  zone_method text not null default 'hrr' check (zone_method in ('hrr','max','lthr')),
   updated_at timestamptz not null default now()
 );
+
+-- pembaruan untuk tabel yang sudah ada
+alter table public.sl_profile add column if not exists lthr smallint check (lthr between 100 and 220);
+alter table public.sl_profile add column if not exists zone_method text not null default 'hrr' check (zone_method in ('hrr','max','lthr'));
 
 -- ========== Lari ==========
 create table if not exists public.sl_runs (

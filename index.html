@@ -9,7 +9,7 @@
 <title>Training Load</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2036%2036'%3E%3Crect%20width='36'%20height='36'%20rx='9'%20fill='%232f47c9'/%3E%3Cpath%20transform='translate(6%200)'%20d='M15%201%203%2021h9l-3%2014%2013-21h-9z'%20fill='%23ffd23f'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Atkinson+Hyperlegible:wght@400;700&family=Roboto+Mono:wght@500&display=swap">
-<link rel="stylesheet" href="style.css?v=5">
+<link rel="stylesheet" href="style.css?v=6">
 </head>
 <body>
 
@@ -49,6 +49,7 @@
       <nav class="tabs" role="tablist" aria-label="Halaman">
         <button class="tab" role="tab" data-tab="today" aria-selected="true">Hari ini</button>
         <button class="tab" role="tab" data-tab="runs" aria-selected="false">Lari</button>
+        <button class="tab" role="tab" data-tab="zones" aria-selected="false">Zona</button>
         <button class="tab" role="tab" data-tab="data" aria-selected="false">Data</button>
       </nav>
     </div>
@@ -116,6 +117,33 @@
       </section>
     </section>
 
+    <!-- ===== ZONA ===== -->
+    <section data-page="zones" class="page" hidden>
+      <section class="card stack" aria-label="Zona detak jantung">
+        <div class="row-between"><h2>Zona detak jantung</h2><span class="muted small-t" id="zoneBasis"></span></div>
+        <fieldset class="scale"><legend>Hitung berdasarkan</legend><div class="chips" id="zoneMethod"></div></fieldset>
+        <p class="muted small-t" id="zoneMethodNote"></p>
+        <div class="zones" id="zoneList"></div>
+      </section>
+
+      <form class="card stack" id="zoneForm">
+        <h2>Angka acuan</h2>
+        <div class="grid2">
+          <div class="field"><label for="zMax">HR maksimal <span class="unit">bpm</span></label><input id="zMax" inputmode="numeric" maxlength="3" required></div>
+          <div class="field"><label for="zLthr">LTHR <span class="unit">bpm, opsional</span></label><input id="zLthr" inputmode="numeric" maxlength="3"></div>
+        </div>
+        <p class="small-t" id="zoneHints"></p>
+        <div class="msg" id="zoneMsg" role="status"></div>
+        <button class="btn">Simpan</button>
+      </form>
+
+      <section class="card stack" aria-label="Sebaran lari per zona">
+        <h2>Lari 4 minggu terakhir</h2>
+        <p class="muted small-t">Dikelompokkan menurut HR rata-rata tiap lari. Untuk lari santai, sebagian besar sebaiknya di zona 2.</p>
+        <div id="zoneDist"></div>
+      </section>
+    </section>
+
     <!-- ===== DATA ===== -->
     <section data-page="data" class="page" hidden>
       <section class="card stack" aria-label="Impor">
@@ -168,9 +196,9 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js" crossorigin="anonymous"></script>
-<script src="config.js?v=5"></script>
-<script src="fit.js?v=5"></script>
-<script src="core.js?v=5"></script>
-<script src="app.js?v=5"></script>
+<script src="config.js?v=6"></script>
+<script src="fit.js?v=6"></script>
+<script src="core.js?v=6"></script>
+<script src="app.js?v=6"></script>
 </body>
 </html>

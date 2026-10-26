@@ -98,7 +98,7 @@ async function route() {
 async function loadAll() {
   const since = Core.dayKey(Date.now() - 400 * Core.DAY);
   const [p, r, c] = await Promise.all([
-    sb.from("sl_profile").select("hr_max,hr_rest,sex").maybeSingle(),
+    sb.from("sl_profile").select("*").maybeSingle(),
     sb.from("sl_runs").select("id,started_at,title,duration_s,distance_m,avg_hr,max_hr,ascent_m,rpe,treadmill,source").order("started_at", { ascending: false }).limit(5000),
     sb.from("sl_checkins").select("day,rhr,rmssd,sdnn,body_battery,sleep_h,soreness,mood,note,source").gte("day", since).order("day")
   ]);
@@ -111,7 +111,7 @@ async function loadAll() {
 function params() {
   const recent = state.checkins.filter(c => c.rhr != null && c.day >= Core.dayKey(Date.now() - 30 * Core.DAY)).map(c => c.rhr).sort((a, b) => a - b);
   const auto = recent.length >= 3 ? recent[Math.floor(recent.length / 2)] : null;
-  return { hrMax: state.profile.hr_max || 190, hrRest: state.profile.hr_rest || auto || 60, sex: state.profile.sex || "L", autoRest: auto };
+  return { hrMax: state.profile.hr_max || 190, hrRest: state.profile.hr_rest || auto || 60, sex: state.profile.sex || "L", autoRest: auto, lthr: state.profile.lthr || null };
 }
 const today = () => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), d.getDate()); };
 const todayCheckin = () => state.checkins.find(c => c.day === Core.dayKey(today()));
@@ -121,7 +121,7 @@ const ciCheckin = () => state.checkins.find(c => c.day === ciKey());
 const shortDay = k => { const d = Core.fromKey(k); return d.getDate() + " " + MON3[d.getMonth()]; };
 
 /* ================= Tampilan: Hari ini ================= */
-function renderAll() { renderReady(); renderLoad(); renderRuns(); renderCiTable(); renderProfileNote(); }
+function renderAll() { renderReady(); renderLoad(); renderRuns(); renderCiTable(); renderProfileNote(); renderZones(); }
 
 function renderReady() {
   const t = today(), d = new Date();
@@ -251,9 +251,9 @@ function renderRuns() {
   $("runCount").textContent = state.runs.length ? state.runs.length + " lari" : "";
   if (!state.runs.length) { $("runList").innerHTML = `<p class="muted">Belum ada lari. Catat di atas, unggah file .fit, atau impor CSV Garmin di tab Data.</p>`; $("moreRuns").hidden = true; return; }
   $("runList").innerHTML = state.runs.slice(0, state.shown).map(r => {
-    const d = new Date(r.started_at), t = Core.runLoad(r, p), pc = pace(r.duration_s, r.distance_m), est = Core.estRpe(r, p), gap = r.rpe && est ? r.rpe - est : 0;
+    const zn = Core.zoneOf(r.avg_hr, curZones()), d = new Date(r.started_at), t = Core.runLoad(r, p), pc = pace(r.duration_s, r.distance_m), est = Core.estRpe(r, p), gap = r.rpe && est ? r.rpe - est : 0;
     return `<article class="run">
-      <div class="r1"><div><div class="title">${esc(r.title || Core.autoTitle(r))}</div>
+      <div class="r1"><div><div class="title">${esc(r.title || Core.autoTitle(r))}${zn ? `<span class="zbadge z${zn}" title="Zona ${zn} menurut HR rata-rata">Z${zn}</span>` : ""}</div>
         <div class="when">${DAYS[d.getDay()]}, ${d.getDate()} ${MON3[d.getMonth()]} ${d.getFullYear()} · ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}</div></div>
         <div class="trimp">${t ? Math.round(t) : "–"}<small>beban${!r.avg_hr && r.rpe ? " (RPE)" : ""}</small></div></div>
       <div class="stats">${r.distance_m ? `<span><b>${nf1(r.distance_m / 1000)}</b> km</span>` : ""}<span><b>${dur(r.duration_s)}</b></span>${pc ? `<span><b>${pc}</b> /km</span>` : ""}${r.avg_hr ? `<span>HR <b>${r.avg_hr}</b>${r.max_hr ? `/<b>${r.max_hr}</b>` : ""}</span>` : `<span class="muted">tanpa HR</span>`}${r.ascent_m ? `<span>↑<b>${r.ascent_m}</b> m</span>` : ""}</div>
@@ -408,6 +408,64 @@ $("profileForm").addEventListener("submit", async e => {
   const { error } = await sb.from("sl_profile").upsert(row, { onConflict: "user_id" });
   if (error) return setMsg("profileMsg", friendlyError(error));
   state.profile = { ...state.profile, ...row }; setMsg("profileMsg", "Pengaturan tersimpan. Semua beban dihitung ulang.", true); renderAll();
+});
+
+/* ================= Zona ================= */
+const METHODS = [["hrr", "HRR (Karvonen)"], ["max", "% HR maks"], ["lthr", "LTHR"]];
+const zoneMethod = () => { const m = state.profile.zone_method || localPref("zoneMethod") || "hrr"; return m === "lthr" && !params().lthr ? "hrr" : m; };
+function localPref(k, v) { try { if (v === undefined) return localStorage.getItem("tl-" + k); localStorage.setItem("tl-" + k, v); } catch (_) { return null; } }
+const curZones = () => Core.zones(zoneMethod(), params());
+function renderZones() {
+  const p = params(), m = zoneMethod(), zs = Core.zones(m, p);
+  $("zoneMethod").innerHTML = METHODS.map(([v, l]) => `<button type="button" class="chip" data-v="${v}" aria-pressed="${m === v}"${v === "lthr" && !p.lthr ? ' title="Isi LTHR dulu di bawah"' : ""}>${l}</button>`).join("");
+  $("zoneMethodNote").textContent = {
+    hrr: `Persentase dari cadangan detak jantung (${p.hrMax} − ${p.hrRest} = ${p.hrMax - p.hrRest} bpm), ditambah HR istirahat. Paling cocok kalau HR istirahat diketahui.`,
+    max: `Persentase langsung dari HR maksimal ${p.hrMax}. Sama dengan pengaturan bawaan jam Garmin.`,
+    lthr: `Persentase dari LTHR ${p.lthr} bpm (metode Joe Friel). Paling personal untuk latihan tempo dan threshold.`
+  }[m];
+  $("zoneBasis").textContent = m === "lthr" ? "LTHR " + p.lthr : m === "hrr" ? `maks ${p.hrMax} · istirahat ${p.hrRest}` : "maks " + p.hrMax;
+  $("zoneList").innerHTML = zs.slice().reverse().map(z => `<div class="zone z${z.n}"><span class="zn">Z${z.n}</span><span class="zt">${esc(z.name)}</span><span class="zr">${z.n === 1 ? "≤ " + z.hi : z.n === 5 ? "≥ " + z.lo : z.lo + "–" + z.hi}<small>bpm</small></span><span class="zd">${esc(z.desc)}</span></div>`).join("");
+  // isian & petunjuk
+  if (document.activeElement !== $("zMax")) $("zMax").value = state.profile.hr_max || 190;
+  if (document.activeElement !== $("zLthr")) $("zLthr").value = state.profile.lthr ?? "";
+  const est = Core.estLthr(state.runs, p, today());
+  const maxSeen = state.runs.reduce((a, r) => Math.max(a, r.max_hr || 0), 0);
+  const hints = [];
+  if (maxSeen) hints.push(`HR tertinggi yang pernah tercatat: <b>${maxSeen}</b> bpm.`);
+  if (est) { const d = new Date(est.run.started_at); hints.push(`Perkiraan LTHR: <b>${est.lthr}</b> bpm, dari lari terberatmu 20–70 menit (${d.getDate()} ${MON3[d.getMonth()]}, ${Math.round(est.run.duration_s / 60)} menit). <button type="button" class="link" id="useLthr">Pakai angka ini</button>`); }
+  hints.push(`Rumus umur: 220 − umur, atau Tanaka 208 − 0,7 × umur.`);
+  $("zoneHints").innerHTML = hints.join(" ");
+  const ub = $("useLthr"); if (ub) ub.onclick = () => { $("zLthr").value = est.lthr; };
+  // sebaran 4 minggu
+  const since = +today() - 28 * Core.DAY, recent = state.runs.filter(r => +new Date(r.started_at) >= since && r.avg_hr);
+  if (!recent.length) { $("zoneDist").innerHTML = `<p class="muted small-t">Belum ada lari dengan data HR dalam 4 minggu terakhir.</p>`; return; }
+  const cnt = [0, 0, 0, 0, 0], mins = [0, 0, 0, 0, 0];
+  recent.forEach(r => { const z = Core.zoneOf(r.avg_hr, zs); cnt[z - 1]++; mins[z - 1] += r.duration_s / 60; });
+  const tot = mins.reduce((a, b) => a + b, 0);
+  $("zoneDist").innerHTML = `<div class="dist">` + [5, 4, 3, 2, 1].map(n => `<div class="dr z${n}"><span class="dl">Z${n}</span><span class="db"><i style="width:${tot ? mins[n - 1] / tot * 100 : 0}%"></i></span><span class="dv">${cnt[n - 1]} lari</span></div>`).join("") + `</div>`;
+}
+$("zoneMethod").addEventListener("click", async e => {
+  const b = e.target.closest("[data-v]"); if (!b) return;
+  if (b.dataset.v === "lthr" && !params().lthr) { setMsg("zoneMsg", "Isi LTHR dulu di bawah, lalu Simpan."); $("zLthr").focus(); return; }
+  state.profile.zone_method = b.dataset.v; localPref("zoneMethod", b.dataset.v); renderZones(); renderRuns();
+  const { error } = await sb.from("sl_profile").upsert({ hr_max: state.profile.hr_max || 190, hr_rest: state.profile.hr_rest ?? null, sex: state.profile.sex || "L", zone_method: b.dataset.v }, { onConflict: "user_id" });
+  if (error && /zone_method|column/i.test(error.message || "")) setMsg("zoneMsg", "Pilihan metode tersimpan di HP ini saja. Jalankan SQL pembaruan supaya ikut tersimpan di akun.");
+});
+$("zoneForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const mx = intOrNull($("zMax").value), lt = intOrNull($("zLthr").value);
+  if (!mx || Number.isNaN(mx) || mx < 120 || mx > 230) return setMsg("zoneMsg", "HR maksimal antara 120 dan 230.");
+  if (Number.isNaN(lt) || (lt != null && (lt < 100 || lt >= mx))) return setMsg("zoneMsg", "LTHR harus di bawah HR maksimal, biasanya 85–92% dari HR maksimal.");
+  const row = { hr_max: mx, hr_rest: state.profile.hr_rest ?? null, sex: state.profile.sex || "L", lthr: lt, updated_at: new Date().toISOString() };
+  setMsg("zoneMsg", "Menyimpan…", true);
+  let { error } = await sb.from("sl_profile").upsert(row, { onConflict: "user_id" });
+  if (error && /lthr|column/i.test(error.message || "")) {
+    // kolom lthr belum ada: simpan HR maks saja
+    delete row.lthr; ({ error } = await sb.from("sl_profile").upsert(row, { onConflict: "user_id" }));
+    if (!error) { state.profile = { ...state.profile, ...row }; renderAll(); return setMsg("zoneMsg", "HR maksimal tersimpan. LTHR belum bisa disimpan: jalankan SQL pembaruan di Supabase dulu."); }
+  }
+  if (error) return setMsg("zoneMsg", friendlyError(error));
+  state.profile = { ...state.profile, ...row }; setMsg("zoneMsg", "Tersimpan. Zona dan beban dihitung ulang.", true); fillProfileForm(); renderAll();
 });
 
 /* ================= Tab ================= */
