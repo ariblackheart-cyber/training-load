@@ -141,13 +141,21 @@ function renderReady() {
   }).join("");
   card.className = "ready " + R.level;
   card.innerHTML = `<span class="label">Kesiapan hari ini</span>
-    <div class="score-row"><span class="emoji" aria-hidden="true">${R.advice.emoji}</span>
+    <svg class="bolt-bg" viewBox="0 0 24 36" aria-hidden="true"><path d="${BOLT}"/></svg>
+    <div class="score-row">${boltMeter(s)}
       <div class="score num" aria-label="Skor ${s} dari 100, ${esc(R.advice.mood)}">${s}<small>/100</small></div>
-      <div class="verdict"><span class="mood">${esc(R.advice.mood)}</span><h2>${esc(R.advice.title)}</h2><p>${esc(R.advice.text)}</p></div></div>
+      <div class="verdict"><span class="mood"><span class="emoji" aria-hidden="true">${R.advice.emoji}</span> ${esc(R.advice.mood)}</span><h2>${esc(R.advice.title)}</h2><p>${esc(R.advice.text)}</p></div></div>
     <div class="scale5" aria-hidden="true">${lanes}</div>
     ${factorList(R.parts)}
     ${R.coverage < 50 ? `<p class="coverage">Skor ini hanya dari sebagian data. Lengkapi check-in supaya lebih akurat.</p>` : ""}
     <p class="disclaim">Panduan latihan, bukan saran medis. Kalau sakit, demam, atau nyeri dada, jangan lari.</p>`;
+}
+const BOLT = "M15 1 3 21h9l-3 14 13-21h-9z";
+// petir terisi dari bawah sesuai skor
+function boltMeter(score) {
+  const y = 36 - 36 * Math.max(0, Math.min(100, score)) / 100;
+  return `<svg class="bolt-meter" viewBox="0 0 24 36" aria-hidden="true"><defs><clipPath id="bm"><rect x="0" y="${y}" width="24" height="${36 - y}"/></clipPath></defs>
+    <path d="${BOLT}" class="empty"/><path d="${BOLT}" class="full" clip-path="url(#bm)"/><path d="${BOLT}" class="edge"/></svg>`;
 }
 function factorList(parts) {
   return `<ul class="factors">${parts.map(p => `<li class="${p.tone}"><span class="dot"></span><span><b>${esc(p.name)}</b> · ${esc(p.text)}</span></li>`).join("")}</ul>`;
