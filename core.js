@@ -20,6 +20,21 @@ const Core = (() => {
   }
 
   // beban satu lari: dari HR rata-rata; kalau tidak ada HR tapi ada RPE, HR diperkirakan dari RPE (tidak disimpan)
+  // Perkiraan RPE (skala 1–10) dari intensitas HR: % cadangan detak jantung (HR rata-rata − istirahat) ÷ (maks − istirahat).
+  // Lari di atas 100 menit ditambah 1 karena lelah akumulasi. Hanya perkiraan; RPE yang diisi sendiri selalu diutamakan.
+  const RPE_STEPS = [[0.94, 10], [0.89, 9], [0.84, 8], [0.78, 7], [0.72, 6], [0.65, 5], [0.58, 4], [0.50, 3], [0, 2]];
+  function estRpe(r, p) {
+    if (!r.avg_hr || p.hrMax - p.hrRest <= 10) return null;
+    const hrr = (r.avg_hr - p.hrRest) / (p.hrMax - p.hrRest);
+    let v = RPE_STEPS.find(([min]) => hrr >= min)[1];
+    if (r.duration_s > 6000 && v < 10) v += 1;
+    return v;
+  }
+  function autoTitle(r) {
+    const h = new Date(r.started_at).getHours(), part = h < 11 ? "pagi" : h < 15 ? "siang" : h < 18 ? "sore" : "malam";
+    const km = r.distance_m ? " " + (Math.round(r.distance_m / 100) / 10).toLocaleString("id-ID") + " km" : "";
+    return (r.treadmill ? "Treadmill " : "Lari ") + part + km;
+  }
   function runLoad(r, p) {
     if (r.avg_hr) return trimp(r.duration_s, r.avg_hr, p);
     if (r.rpe) return trimp(r.duration_s, Math.round(p.hrRest + (p.hrMax - p.hrRest) * (0.45 + r.rpe * 0.05)), p);
@@ -221,6 +236,6 @@ const Core = (() => {
     return { score, level, parts, advice, filled: true, coverage: w };
   }
 
-  return { LEVELS, DAY, dayKey, fromKey, toMinute, trimp, runLoad, parseGarminCsv, fitToRun, parseJournal, loadStatus, weeklySeries, readiness, num, hms };
+  return { LEVELS, DAY, dayKey, fromKey, toMinute, trimp, runLoad, estRpe, autoTitle, parseGarminCsv, fitToRun, parseJournal, loadStatus, weeklySeries, readiness, num, hms };
 })();
 if (typeof module !== "undefined") module.exports = Core;

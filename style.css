@@ -157,3 +157,4 @@ fieldset.scale legend{font-size:13px;font-weight:700;padding:0;margin-bottom:6px
 .ci-date{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .ci-date label{font-size:13px;font-weight:700}
 .ci-date input{font:inherit;font-size:15px;padding:7px 10px;border:1px solid var(--line);border-radius:9px;background:var(--paper);color:var(--ink)}
+.rpe-flag{flex-basis:100%;order:5;font-size:12px;font-weight:700;color:var(--warn);background:var(--warn-soft);padding:4px 8px;border-radius:8px}

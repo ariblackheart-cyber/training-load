@@ -251,13 +251,13 @@ function renderRuns() {
   $("runCount").textContent = state.runs.length ? state.runs.length + " lari" : "";
   if (!state.runs.length) { $("runList").innerHTML = `<p class="muted">Belum ada lari. Catat di atas, unggah file .fit, atau impor CSV Garmin di tab Data.</p>`; $("moreRuns").hidden = true; return; }
   $("runList").innerHTML = state.runs.slice(0, state.shown).map(r => {
-    const d = new Date(r.started_at), t = Core.runLoad(r, p), pc = pace(r.duration_s, r.distance_m);
+    const d = new Date(r.started_at), t = Core.runLoad(r, p), pc = pace(r.duration_s, r.distance_m), est = Core.estRpe(r, p), gap = r.rpe && est ? r.rpe - est : 0;
     return `<article class="run">
-      <div class="r1"><div><div class="title">${esc(r.title || (r.treadmill ? "Lari treadmill" : "Lari"))}</div>
+      <div class="r1"><div><div class="title">${esc(r.title || Core.autoTitle(r))}</div>
         <div class="when">${DAYS[d.getDay()]}, ${d.getDate()} ${MON3[d.getMonth()]} ${d.getFullYear()} · ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}</div></div>
         <div class="trimp">${t ? Math.round(t) : "–"}<small>beban${!r.avg_hr && r.rpe ? " (RPE)" : ""}</small></div></div>
       <div class="stats">${r.distance_m ? `<span><b>${nf1(r.distance_m / 1000)}</b> km</span>` : ""}<span><b>${dur(r.duration_s)}</b></span>${pc ? `<span><b>${pc}</b> /km</span>` : ""}${r.avg_hr ? `<span>HR <b>${r.avg_hr}</b>${r.max_hr ? `/<b>${r.max_hr}</b>` : ""}</span>` : `<span class="muted">tanpa HR</span>`}${r.ascent_m ? `<span>↑<b>${r.ascent_m}</b> m</span>` : ""}</div>
-      <div class="r3"><label class="when">RPE <select data-rpe="${esc(r.id)}" aria-label="RPE untuk lari ini"><option value="">–</option>${Array.from({ length: 10 }, (_, i) => `<option value="${i + 1}"${r.rpe === i + 1 ? " selected" : ""}>${i + 1}</option>`).join("")}</select></label>
+      <div class="r3"><label class="when">RPE <select data-rpe="${esc(r.id)}" aria-label="RPE untuk lari ini"><option value="">${est ? "≈" + est + " (perkiraan)" : "–"}</option>${Array.from({ length: 10 }, (_, i) => `<option value="${i + 1}"${r.rpe === i + 1 ? " selected" : ""}>${i + 1}</option>`).join("")}</select></label>${gap >= 2 ? `<span class="rpe-flag">Terasa lebih berat dari biasanya (HR menunjukkan ≈${est})</span>` : ""}
         <span class="src">${{ csv: "impor CSV", fit: "file FIT", manual: "dicatat" }[r.source] || ""}</span>
         <button class="del" data-del="${esc(r.id)}">Hapus</button></div>
     </article>`;
@@ -271,7 +271,7 @@ $("runList").addEventListener("change", async e => {
   const prev = run.rpe; run.rpe = v;
   const { error } = await sb.from("sl_runs").update({ rpe: v }).eq("id", id);
   if (error) { run.rpe = prev; renderRuns(); alertRuns(friendlyError(error)); return; }
-  if (!run.avg_hr) renderAll();
+  if (!run.avg_hr) renderAll(); else renderRuns();
 });
 let delArm = null;
 $("runList").addEventListener("click", async e => {
