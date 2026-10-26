@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src https://ozuyxymtvtonivohxuoj.supabase.co wss://ozuyxymtvtonivohxuoj.supabase.co; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#2f47c9">
+<title>Siap Lari</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Atkinson+Hyperlegible:wght@400;700&family=Roboto+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="style.css?v=1">
+</head>
+<body>
+
+<div class="lock" id="loading"><div class="brand"><span class="label">Beban & kesiapan lari</span><h1>Siap Lari</h1></div><p class="muted">Memuat…</p></div>
+
+<!-- Masuk -->
+<section class="lock" id="authScreen" hidden>
+  <div class="brand"><span class="label">Beban & kesiapan lari</span><h1>Siap Lari</h1></div>
+  <p class="muted">Pakai akun yang sama dengan Dompetku kalau sudah punya.</p>
+  <div class="tabs2" role="tablist">
+    <button class="tab2" id="tabLogin" role="tab" aria-selected="true">Masuk</button>
+    <button class="tab2" id="tabSignup" role="tab" aria-selected="false">Daftar</button>
+  </div>
+  <form class="stack" id="authForm">
+    <div class="field"><label for="email">Email</label><input id="email" type="email" autocomplete="email" autocapitalize="none" required></div>
+    <div class="field"><label for="password">Kata sandi</label><input id="password" type="password" autocomplete="current-password" minlength="8" required></div>
+    <div class="field" id="pass2Field" hidden><label for="password2">Ulangi kata sandi</label><input id="password2" type="password" autocomplete="new-password"></div>
+    <div class="msg" id="authErr" role="alert"></div>
+    <button class="btn" id="authBtn">Masuk</button>
+    <button type="button" class="link" id="forgotBtn">Lupa kata sandi?</button>
+  </form>
+</section>
+
+<form class="lock" id="resetScreen" hidden>
+  <div class="brand"><span class="label">Siap Lari</span><h1>Kata sandi baru</h1></div>
+  <div class="field"><label for="newPw">Kata sandi baru</label><input id="newPw" type="password" autocomplete="new-password" minlength="8" required></div>
+  <div class="field"><label for="newPw2">Ulangi kata sandi</label><input id="newPw2" type="password" autocomplete="new-password" required></div>
+  <div class="msg" id="resetErr" role="alert"></div>
+  <button class="btn">Simpan kata sandi</button>
+</form>
+
+<!-- Aplikasi -->
+<div id="app" hidden>
+  <header class="top">
+    <div class="top-in">
+      <div class="brand small"><h1>Siap Lari</h1><span class="muted" id="todayLabel"></span></div>
+      <nav class="tabs" role="tablist" aria-label="Halaman">
+        <button class="tab" role="tab" data-tab="today" aria-selected="true">Hari ini</button>
+        <button class="tab" role="tab" data-tab="runs" aria-selected="false">Lari</button>
+        <button class="tab" role="tab" data-tab="data" aria-selected="false">Data</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <!-- ===== HARI INI ===== -->
+    <section data-page="today" class="page">
+      <article class="ready" id="readyCard" aria-live="polite"></article>
+
+      <form class="card stack" id="checkinForm">
+        <div class="row-between"><h2>Check-in pagi</h2><span class="muted small-t" id="checkinState"></span></div>
+        <p class="muted small-t">Angka detak istirahat dan Body Battery ada di FR55: geser widget, atau lihat di Garmin Connect.</p>
+        <div class="grid2">
+          <div class="field"><label for="ciRhr">Detak istirahat <span class="unit">bpm</span></label><input id="ciRhr" inputmode="numeric" maxlength="3" placeholder="mis. 52"></div>
+          <div class="field"><label for="ciBb">Body Battery <span class="unit">0–100</span></label><input id="ciBb" inputmode="numeric" maxlength="3" placeholder="mis. 78"></div>
+          <div class="field"><label for="ciSleep">Tidur <span class="unit">jam</span></label><input id="ciSleep" inputmode="decimal" maxlength="4" placeholder="mis. 7,5"></div>
+          <div class="field"><label for="ciRmssd">HRV / RMSSD <span class="unit">ms, opsional</span></label><input id="ciRmssd" inputmode="decimal" maxlength="5" placeholder="mis. 48"></div>
+        </div>
+        <fieldset class="scale"><legend>Pegal otot</legend><div class="chips" id="ciSore"></div></fieldset>
+        <fieldset class="scale"><legend>Mood & energi</legend><div class="chips" id="ciMood"></div></fieldset>
+        <div class="msg" id="checkinMsg" role="status"></div>
+        <button class="btn">Simpan check-in</button>
+      </form>
+
+      <section class="card stack" aria-label="Beban latihan">
+        <h2>Beban latihan</h2>
+        <div class="tiles" id="loadTiles"></div>
+        <p class="muted small-t" id="loadNote"></p>
+        <h3>Beban per minggu</h3>
+        <div class="chart" id="weekChart"></div>
+      </section>
+    </section>
+
+    <!-- ===== LARI ===== -->
+    <section data-page="runs" class="page" hidden>
+      <form class="card stack" id="runForm">
+        <h2>Catat lari</h2>
+        <div class="grid2">
+          <div class="field"><label for="rDate">Tanggal</label><input id="rDate" type="date" required></div>
+          <div class="field"><label for="rTime">Jam mulai</label><input id="rTime" type="time" required></div>
+          <div class="field"><label for="rDur">Durasi <span class="unit">jj:mm:dd</span></label><input id="rDur" inputmode="numeric" placeholder="mis. 0:45:30" required></div>
+          <div class="field"><label for="rDist">Jarak <span class="unit">km</span></label><input id="rDist" inputmode="decimal" placeholder="mis. 7,5"></div>
+          <div class="field"><label for="rHr">HR rata-rata <span class="unit">bpm</span></label><input id="rHr" inputmode="numeric" maxlength="3" placeholder="mis. 145"></div>
+          <div class="field"><label for="rHrMax">HR maks <span class="unit">opsional</span></label><input id="rHrMax" inputmode="numeric" maxlength="3"></div>
+        </div>
+        <fieldset class="scale"><legend>Seberapa berat? (RPE)</legend><div class="chips rpe" id="rRpe"></div></fieldset>
+        <div class="msg" id="runMsg" role="status"></div>
+        <button class="btn">Simpan lari</button>
+      </form>
+
+      <section class="card stack" aria-label="Unggah file FIT">
+        <h2>Unggah dari jam</h2>
+        <p class="muted small-t">Di Garmin Connect, buka aktivitas → ⋯ → <b>Export Original</b>, lalu unggah file .fit-nya di sini. Bisa beberapa file sekaligus.</p>
+        <label class="btn ghost file" for="fitFile">Pilih file .fit</label>
+        <input id="fitFile" type="file" accept=".fit,.FIT,application/octet-stream" multiple hidden>
+        <div class="msg" id="fitMsg" role="status"></div>
+      </section>
+
+      <section class="stack" aria-label="Daftar lari">
+        <div class="row-between"><h2>Riwayat lari</h2><span class="muted small-t" id="runCount"></span></div>
+        <div class="runs" id="runList"></div>
+        <button class="btn ghost" id="moreRuns" hidden>Tampilkan lebih banyak</button>
+      </section>
+    </section>
+
+    <!-- ===== DATA ===== -->
+    <section data-page="data" class="page" hidden>
+      <section class="card stack" aria-label="Impor">
+        <h2>Impor data</h2>
+        <div class="imp">
+          <div><b>Aktivitas Garmin (.csv)</b><p class="muted small-t">Garmin Connect web → Activities → gulir sampai semua lari tampil → <b>Export CSV</b>.</p></div>
+          <label class="btn ghost file" for="csvFile">Pilih CSV</label>
+          <input id="csvFile" type="file" accept=".csv,text/csv" hidden>
+        </div>
+        <div class="imp">
+          <div><b>Jurnal HRV (.json)</b><p class="muted small-t">Ekspor dari aplikasi HRV. Yang diambil: HRV pagi, detak istirahat, dan lama tidur.</p></div>
+          <label class="btn ghost file" for="jsonFile">Pilih JSON</label>
+          <input id="jsonFile" type="file" accept=".json,application/json" hidden>
+        </div>
+        <div class="msg" id="importMsg" role="status"></div>
+        <p class="muted small-t">Impor ulang aman: lari dengan jam mulai yang sama tidak akan dobel, dan RPE yang sudah kamu isi tidak ditimpa.</p>
+      </section>
+
+      <form class="card stack" id="profileForm">
+        <h2>Pengaturan hitungan</h2>
+        <div class="grid2">
+          <div class="field"><label for="pMax">HR maksimal <span class="unit">bpm</span></label><input id="pMax" inputmode="numeric" maxlength="3" required></div>
+          <div class="field"><label for="pRest">HR istirahat <span class="unit">kosong = otomatis</span></label><input id="pRest" inputmode="numeric" maxlength="3"></div>
+        </div>
+        <fieldset class="scale"><legend>Jenis kelamin (faktor TRIMP)</legend><div class="chips" id="pSex"></div></fieldset>
+        <p class="muted small-t" id="profileNote"></p>
+        <div class="msg" id="profileMsg" role="status"></div>
+        <button class="btn">Simpan pengaturan</button>
+      </form>
+
+      <section class="card stack" aria-label="Riwayat check-in">
+        <h2>Riwayat check-in</h2>
+        <div class="tbl-wrap"><table class="tbl" id="ciTable"></table></div>
+      </section>
+
+      <section class="card stack" aria-label="Cara menghitung">
+        <h2>Cara menghitung</h2>
+        <p class="small-t"><b>Beban (TRIMP)</b> = durasi × intensitas detak jantung. Lari 60 menit santai di HR 135 kira-kira 80–90; lari keras atau lama bisa di atas 200.</p>
+        <p class="small-t"><b>Rasio akut:kronis</b> = beban 7 hari ÷ rata-rata beban mingguan 4 minggu. 0,8–1,3 seimbang; di atas 1,5 beban naik terlalu cepat dan risiko cedera meningkat.</p>
+        <p class="small-t"><b>Skor kesiapan</b> menggabungkan HRV dan detak istirahat dibanding angka normalmu sendiri, tidur, Body Battery, pegal, mood, dan rasio beban. Ini panduan latihan, bukan saran medis.</p>
+      </section>
+
+      <section class="stack">
+        <p class="muted small-t" id="whoami"></p>
+        <button class="btn ghost" id="logoutBtn">Keluar</button>
+      </section>
+    </section>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js" crossorigin="anonymous"></script>
+<script src="config.js?v=1"></script>
+<script src="fit.js?v=1"></script>
+<script src="core.js?v=1"></script>
+<script src="app.js?v=1"></script>
+</body>
+</html>
