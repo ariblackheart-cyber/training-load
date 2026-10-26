@@ -18,7 +18,7 @@ function friendlyError(e) {
   if (/already registered/i.test(m)) return "Email ini sudah terdaftar. Silakan masuk.";
   if (/rate limit|too many/i.test(m)) return "Terlalu banyak percobaan. Tunggu beberapa menit lalu coba lagi.";
   if (/Failed to fetch|NetworkError|network/i.test(m)) return "Tidak tersambung ke internet. Periksa koneksimu.";
-  if (/relation .* does not exist|sl_runs|sl_checkins|sl_profile/i.test(m) && /exist|find/i.test(m)) return "Tabel Siap Lari belum dibuat. Jalankan schema.sql di SQL Editor Supabase.";
+  if (/relation .* does not exist|sl_runs|sl_checkins|sl_profile/i.test(m) && /exist|find/i.test(m)) return "Tabel Training Load belum dibuat. Jalankan schema.sql di SQL Editor Supabase.";
   if (/check constraint/i.test(m)) return "Ada angka di luar batas wajar. Periksa lagi isiannya.";
   if (/weak|Password should/i.test(m)) return "Kata sandi terlalu lemah. Pakai minimal 8 karakter dengan angka dan simbol.";
   if (/JWT|session/i.test(m)) return "Sesi berakhir. Silakan masuk lagi.";
@@ -133,13 +133,18 @@ function renderReady() {
       ${R.parts.length ? factorList(R.parts) : ""}`;
     return;
   }
-  const s = R.score;
+  const s = R.score, idx = Core.LEVELS.length - 1 - Core.LEVELS.findIndex(x => x.key === R.level);
+  const lanes = [...Core.LEVELS].reverse().map((lv, i) => {
+    const lo = i === 0 ? 0 : lv.min, hi = i === 4 ? 100 : Core.LEVELS[Core.LEVELS.length - 1 - i - 1].min - 1, on = i === idx;
+    const pos = on ? Math.min(100, Math.max(0, (s - lo) / Math.max(1, hi - lo) * 100)) : null;
+    return `<div class="lane${on ? " on" : ""}" title="${lo}–${hi}: ${lv.mood}"><span class="em">${lv.emoji}</span><span class="bar">${on ? `<span class="pin" style="left:${pos}%"></span>` : ""}</span><span class="rng">${lo}–${hi}</span></div>`;
+  }).join("");
   card.className = "ready " + R.level;
   card.innerHTML = `<span class="label">Kesiapan hari ini</span>
-    <div class="score-row"><div class="score num" aria-label="Skor ${s} dari 100">${s}<small>/100</small></div>
-      <div class="verdict"><h2>${esc(R.advice.title)}</h2><p>${esc(R.advice.text)}</p></div></div>
-    <div class="lanes" aria-hidden="true"><span class="seg l1"></span><span class="seg l2"></span><span class="seg l3"></span><span class="seg l4"></span>
-      <span class="mark" style="left:${s}%"></span>${[0, 40, 55, 75, 100].map(v => `<span class="tick" style="left:${Math.min(97, Math.max(3, v))}%">${v}</span>`).join("")}</div>
+    <div class="score-row"><span class="emoji" aria-hidden="true">${R.advice.emoji}</span>
+      <div class="score num" aria-label="Skor ${s} dari 100, ${esc(R.advice.mood)}">${s}<small>/100</small></div>
+      <div class="verdict"><span class="mood">${esc(R.advice.mood)}</span><h2>${esc(R.advice.title)}</h2><p>${esc(R.advice.text)}</p></div></div>
+    <div class="scale5" aria-hidden="true">${lanes}</div>
     ${factorList(R.parts)}
     ${R.coverage < 50 ? `<p class="coverage">Skor ini hanya dari sebagian data. Lengkapi check-in supaya lebih akurat.</p>` : ""}
     <p class="disclaim">Panduan latihan, bukan saran medis. Kalau sakit, demam, atau nyeri dada, jangan lari.</p>`;

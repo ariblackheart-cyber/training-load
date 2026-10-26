@@ -161,6 +161,14 @@ const Core = (() => {
   }
 
   /* ---------- Kesiapan ---------- */
+  // lima tingkat per 20 poin
+  const LEVELS = [
+    { key: "prima", min: 81, emoji: "🤩", mood: "Prima", title: "Siap latihan berat", text: "Tubuh pulih dengan sangat baik. Hari yang tepat untuk interval, tempo, atau long run." },
+    { key: "segar", min: 61, emoji: "🙂", mood: "Segar", title: "Boleh latihan sedang", text: "Kondisi baik. Easy run atau latihan sedang aman; latihan keras boleh kalau badan terasa enak." },
+    { key: "biasa", min: 41, emoji: "😐", mood: "Biasa", title: "Lari santai saja", text: "Belum prima. Pilih easy run dengan napas masih bisa ngobrol, jangan kejar pace." },
+    { key: "lelah", min: 21, emoji: "😴", mood: "Lelah", title: "Ringan atau ganti olahraga", text: "Tubuh masih memulihkan diri. Jalan kaki, recovery run sangat pelan, atau peregangan." },
+    { key: "lemas", min: 0, emoji: "😩", mood: "Lemas", title: "Istirahat dulu", text: "Banyak tanda tubuh belum pulih. Istirahat hari ini membuat latihan berikutnya lebih berkualitas." }
+  ];
   const mean = a => a.reduce((x, y) => x + y, 0) / a.length;
   const sd = a => { const m = mean(a); return Math.sqrt(a.reduce((x, y) => x + (y - m) ** 2, 0) / Math.max(1, a.length - 1)); };
   const median = a => { const s = [...a].sort((x, y) => x - y), n = s.length; return n % 2 ? s[(n - 1) / 2] : (s[n / 2 - 1] + s[n / 2]) / 2; };
@@ -208,16 +216,11 @@ const Core = (() => {
     let score = Math.round(scored.reduce((a, p) => a + p.score * p.weight, 0) / w);
     // satu tanda bahaya cukup untuk membatasi skor
     if (scored.some(p => p.tone === "bad" && p.weight >= 15)) score = Math.min(score, 60);
-    const level = score >= 75 ? "siap" : score >= 55 ? "santai" : score >= 40 ? "ringan" : "istirahat";
-    const advice = {
-      siap: { title: "Siap latihan berat", text: "Tubuh pulih dengan baik. Hari yang cocok untuk interval, tempo, atau long run." },
-      santai: { title: "Lari santai saja", text: "Kondisi cukup, tapi belum prima. Pilih easy run dengan napas masih bisa ngobrol." },
-      ringan: { title: "Ringan atau ganti olahraga", text: "Tubuh masih memulihkan diri. Jalan kaki, recovery run sangat pelan, atau peregangan." },
-      istirahat: { title: "Sebaiknya istirahat", text: "Beberapa tanda menunjukkan tubuh belum pulih. Istirahat hari ini membantu latihan besok lebih berkualitas." }
-    }[level];
+    const L = LEVELS.find(x => score >= x.min);
+    const level = L.key, advice = { title: L.title, text: L.text, emoji: L.emoji, mood: L.mood };
     return { score, level, parts, advice, filled: true, coverage: w };
   }
 
-  return { DAY, dayKey, fromKey, toMinute, trimp, runLoad, parseGarminCsv, fitToRun, parseJournal, loadStatus, weeklySeries, readiness, num, hms };
+  return { LEVELS, DAY, dayKey, fromKey, toMinute, trimp, runLoad, parseGarminCsv, fitToRun, parseJournal, loadStatus, weeklySeries, readiness, num, hms };
 })();
 if (typeof module !== "undefined") module.exports = Core;

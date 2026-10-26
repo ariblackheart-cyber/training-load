@@ -1,4 +1,4 @@
-# Siap Lari
+# Training Load
 
 Pencatat beban latihan dan kesiapan lari untuk pengguna Garmin yang jamnya tidak punya Training Load / Training Readiness (misalnya Forerunner 55).
 
