@@ -176,3 +176,17 @@ fieldset.scale legend{font-size:13px;font-weight:700;padding:0;margin-bottom:6px
 .dist .db{height:12px;border-radius:4px;background:var(--line);overflow:hidden}
 .dist .db i{display:block;height:100%;background:var(--zc);border-radius:4px}
 .dist .dv{text-align:right;color:var(--muted);font-family:var(--f-num)}
+
+/* peringatan dini setelah latihan */
+.post{border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;background:var(--good-soft);border:1px solid color-mix(in srgb,var(--good) 30%,transparent)}
+.post.warn{background:var(--warn-soft);border-color:color-mix(in srgb,var(--warn) 35%,transparent)}
+.post.bad{background:var(--bad-soft);border-color:color-mix(in srgb,var(--bad) 35%,transparent)}
+.post p{margin:0;font-size:14px}
+.post-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.post-load{font-size:13px;color:var(--muted)} .post-load b{font-size:18px;color:var(--track)}
+.post-warn{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:5px}
+.post-warn li{font-size:13px;padding-left:20px;position:relative;line-height:1.4}
+.post-warn li::before{content:"⚠";position:absolute;left:0;top:0}
+.post-warn li.bad{color:var(--bad);font-weight:700} .post-warn li.warn{color:var(--warn);font-weight:700}
+.post-next{font-weight:700}
+.post-note{font-size:12px!important;color:var(--muted)}

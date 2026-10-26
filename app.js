@@ -136,7 +136,7 @@ function renderReady() {
     card.innerHTML = `<span class="label">Kesiapan hari ini</span>
       <h2>${R.parts.length ? "Datanya belum cukup untuk skor" : "Isi check-in pagi dulu"}</h2>
       <p class="muted">${R.parts.length ? "HRV dan detak istirahat butuh beberapa hari data sebagai pembanding. Isi juga tidur, Body Battery, pegal, dan mood supaya skor bisa dihitung." : "Isi detak istirahat, Body Battery, tidur, pegal, dan mood di bawah. Hanya butuh sekitar 30 detik."}</p>
-      ${R.parts.length ? factorList(R.parts) : ""}`;
+      ${R.parts.length ? factorList(R.parts) : ""}${postRunBox(R.score)}`;
     return;
   }
   const s = R.score, idx = Core.LEVELS.length - 1 - Core.LEVELS.findIndex(x => x.key === R.level);
@@ -154,6 +154,7 @@ function renderReady() {
     <div class="scale5" aria-hidden="true">${lanes}</div>
     ${factorList(R.parts)}
     ${R.coverage < 50 ? `<p class="coverage">Skor ini hanya dari sebagian data. Lengkapi check-in supaya lebih akurat.</p>` : ""}
+    ${postRunBox(s)}
     <p class="disclaim">Panduan latihan, bukan saran medis. Kalau sakit, demam, atau nyeri dada, jangan lari.</p>`;
 }
 const BOLT = "M15 1 3 21h9l-3 14 13-21h-9z";
@@ -162,6 +163,19 @@ function boltMeter(score) {
   const y = 36 - 36 * Math.max(0, Math.min(100, score)) / 100;
   return `<svg class="bolt-meter" viewBox="0 0 24 36" aria-hidden="true"><defs><clipPath id="bm"><rect x="0" y="${y}" width="24" height="${36 - y}"/></clipPath></defs>
     <path d="${BOLT}" class="empty"/><path d="${BOLT}" class="full" clip-path="url(#bm)"/><path d="${BOLT}" class="edge"/></svg>`;
+}
+// kotak "setelah latihan": muncul kalau sudah ada lari hari ini
+function postRunBox(score) {
+  const P = Core.postRun(state.runs, today(), params(), score);
+  if (!P) return "";
+  const h = P.hours >= 48 ? Math.round(P.hours / 24) + " hari" : P.hours + " jam";
+  return `<div class="post ${P.tone}">
+    <div class="post-head"><span class="label">Setelah latihan hari ini</span><span class="post-load"><b class="num">${Math.round(P.load)}</b> beban${P.count > 1 ? ` · ${P.count} lari` : ""}</span></div>
+    <p class="post-rec">Saran pulih <b>±${h}</b>${P.typical ? ` · sesi biasamu ±${Math.round(P.typical)}` : ""}</p>
+    ${P.warn.length ? `<ul class="post-warn">${P.warn.map(w => `<li class="${w.tone}">${esc(w.text)}</li>`).join("")}</ul>` : ""}
+    <p class="post-next">${esc(P.tomorrow)}</p>
+    <p class="post-note">Skor di atas adalah kondisi pagi tadi. Efek latihan ini terlihat di check-in besok.</p>
+  </div>`;
 }
 function factorList(parts) {
   return `<ul class="factors">${parts.map(p => `<li class="${p.tone}"><span class="dot"></span><span><b>${esc(p.name)}</b> · ${esc(p.text)}</span></li>`).join("")}</ul>`;

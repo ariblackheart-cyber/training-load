@@ -201,6 +201,30 @@ const Core = (() => {
     return out;
   }
 
+  /* ---------- Peringatan dini setelah latihan ---------- */
+  // Dipanggil kalau sudah ada lari hari ini. score = skor kesiapan pagi (boleh null).
+  function postRun(runs, today, p, score) {
+    const key = dayKey(today), done = runs.filter(r => dayKey(r.started_at) === key);
+    if (!done.length) return null;
+    const load = done.reduce((a, r) => a + runLoad(r, p), 0);
+    // beban biasa per sesi: median 28 hari terakhir (tanpa hari ini)
+    const past = runs.filter(r => { const k = dayKey(r.started_at); return k < key && k >= dayKey(+today - 28 * DAY); }).map(r => runLoad(r, p)).filter(v => v > 0);
+    const typical = past.length >= 3 ? median(past) : null;
+    const hours = Math.min(72, Math.max(8, Math.round((8 + load * 0.25) / 6) * 6));
+    const warn = []; // {tone, text}
+    if (typical && load > typical * 1.5) warn.push({ tone: load > typical * 2 ? "bad" : "warn", text: `Lari hari ini ${(Math.round(load / typical * 10) / 10).toLocaleString("id-ID")}× lebih berat dari sesi biasamu (±${Math.round(typical)}).` });
+    const L = loadStatus(today, runs, p);
+    if (L.ratio != null && L.status !== "jeda" && L.status !== "awal" && L.ratio > 1.3) warn.push({ tone: L.ratio > 1.5 ? "bad" : "warn", text: `Beban 7 hari sekarang ${L.ratio.toFixed(2).replace(".", ",")}× rata-rata mingguanmu. ${L.ratio > 1.5 ? "Naik terlalu cepat, risiko cedera meningkat." : "Mulai tinggi, jaga besok tetap ringan."}` });
+    if (score != null && score <= 40 && (typical ? load > typical * 0.8 : load > 60)) warn.push({ tone: "bad", text: `Kesiapan pagi tadi rendah (${score}), tapi latihannya cukup berat. Prioritaskan tidur dan makan yang cukup.` });
+    const yKey = dayKey(+today - DAY), yLoad = runs.filter(r => dayKey(r.started_at) === yKey).reduce((a, r) => a + runLoad(r, p), 0);
+    if (typical && yLoad > typical * 1.2 && load > typical * 1.2) warn.push({ tone: "warn", text: "Dua hari berturut-turut berat. Tubuh butuh hari santai untuk menyerap latihan." });
+    const felt = done.find(r => { const e = estRpe(r, p); return r.rpe && e && r.rpe - e >= 2; });
+    if (felt) warn.push({ tone: "warn", text: `RPE ${felt.rpe} terasa jauh lebih berat dari HR-nya (≈${estRpe(felt, p)}). Ini sering tanda awal kelelahan atau mau sakit.` });
+    const bad = warn.some(w => w.tone === "bad");
+    const tomorrow = bad ? "Besok sebaiknya istirahat atau jalan santai, lalu lihat check-in pagi." : warn.length ? "Besok lari santai (Z1–Z2) saja, atau istirahat kalau check-in pagi rendah." : "Tidak ada tanda bahaya. Cek kesiapan besok pagi seperti biasa.";
+    return { count: done.length, load, hours, typical, warn, tomorrow, tone: bad ? "bad" : warn.length ? "warn" : "good" };
+  }
+
   /* ---------- Kesiapan ---------- */
   // lima tingkat per 20 poin
   const LEVELS = [
@@ -262,6 +286,6 @@ const Core = (() => {
     return { score, level, parts, advice, filled: true, coverage: w };
   }
 
-  return { LEVELS, ZONE_INFO, zones, zoneOf, estLthr, DAY, dayKey, fromKey, toMinute, trimp, runLoad, estRpe, autoTitle, parseGarminCsv, fitToRun, parseJournal, loadStatus, weeklySeries, readiness, num, hms };
+  return { postRun, LEVELS, ZONE_INFO, zones, zoneOf, estLthr, DAY, dayKey, fromKey, toMinute, trimp, runLoad, estRpe, autoTitle, parseGarminCsv, fitToRun, parseJournal, loadStatus, weeklySeries, readiness, num, hms };
 })();
 if (typeof module !== "undefined") module.exports = Core;

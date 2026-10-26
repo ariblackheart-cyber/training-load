@@ -1,6 +1,6 @@
 // Cache aplikasi supaya cepat dibuka dari home screen. Data dari Supabase selalu diambil langsung dari server.
-const CACHE = "training-load-v7";
-const CORE = ["./", "style.css?v=7", "config.js?v=7", "fit.js?v=7", "core.js?v=7", "app.js?v=7", "manifest.webmanifest", "icon-180.png", "icon-192.png"];
+const CACHE = "training-load-v8";
+const CORE = ["./", "style.css?v=8", "config.js?v=8", "fit.js?v=8", "core.js?v=8", "app.js?v=8", "manifest.webmanifest", "icon-180.png", "icon-192.png"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)).then(() => self.skipWaiting()));
 });
