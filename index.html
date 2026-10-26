@@ -9,7 +9,7 @@
 <title>Training Load</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2036%2036'%3E%3Crect%20width='36'%20height='36'%20rx='9'%20fill='%232f47c9'/%3E%3Cpath%20transform='translate(6%200)'%20d='M15%201%203%2021h9l-3%2014%2013-21h-9z'%20fill='%23ffd23f'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Atkinson+Hyperlegible:wght@400;700&family=Roboto+Mono:wght@500&display=swap">
-<link rel="stylesheet" href="style.css?v=3">
+<link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
 
@@ -61,6 +61,7 @@
 
       <form class="card stack" id="checkinForm">
         <div class="row-between"><h2>Check-in pagi</h2><span class="muted small-t" id="checkinState"></span></div>
+        <div class="ci-date"><label for="ciDate">Tanggal</label><input id="ciDate" type="date" required><button type="button" class="link" id="ciToday" hidden>Kembali ke hari ini</button></div>
         <p class="muted small-t">Angka detak istirahat dan Body Battery ada di FR55: geser widget, atau lihat di Garmin Connect.</p>
         <div class="grid2">
           <div class="field"><label for="ciRhr">Detak istirahat <span class="unit">bpm</span></label><input id="ciRhr" inputmode="numeric" maxlength="3" placeholder="mis. 52"></div>
@@ -166,9 +167,9 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js" crossorigin="anonymous"></script>
-<script src="config.js?v=3"></script>
-<script src="fit.js?v=3"></script>
-<script src="core.js?v=3"></script>
-<script src="app.js?v=3"></script>
+<script src="config.js?v=4"></script>
+<script src="fit.js?v=4"></script>
+<script src="core.js?v=4"></script>
+<script src="app.js?v=4"></script>
 </body>
 </html>

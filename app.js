@@ -115,6 +115,10 @@ function params() {
 }
 const today = () => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), d.getDate()); };
 const todayCheckin = () => state.checkins.find(c => c.day === Core.dayKey(today()));
+let ciDay = null; // tanggal yang sedang diisi di form check-in (kunci yyyy-mm-dd)
+const ciKey = () => ciDay || Core.dayKey(today());
+const ciCheckin = () => state.checkins.find(c => c.day === ciKey());
+const shortDay = k => { const d = Core.fromKey(k); return d.getDate() + " " + MON3[d.getMonth()]; };
 
 /* ================= Tampilan: Hari ini ================= */
 function renderAll() { renderReady(); renderLoad(); renderRuns(); renderCiTable(); renderProfileNote(); }
@@ -199,12 +203,19 @@ function renderScale(id, labels, key) {
   $(id).innerHTML = labels.map((l, i) => `<button type="button" class="chip" data-v="${i + 1}" aria-pressed="${state.ci[key] === i + 1}">${l}</button>`).join("");
 }
 function fillCheckinForm() {
-  const c = todayCheckin() || {};
+  const k = ciKey(), isToday = k === Core.dayKey(today());
+  $("ciDate").max = Core.dayKey(today()); $("ciDate").value = k; $("ciToday").hidden = isToday;
+  const c = ciCheckin() || {};
   $("ciRhr").value = c.rhr ?? ""; $("ciBb").value = c.body_battery ?? ""; $("ciSleep").value = c.sleep_h != null ? String(c.sleep_h).replace(".", ",") : ""; $("ciRmssd").value = c.rmssd != null ? String(c.rmssd).replace(".", ",") : "";
   state.ci = { soreness: c.soreness ?? null, mood: c.mood ?? null };
   renderScale("ciSore", SORE, "soreness"); renderScale("ciMood", MOOD, "mood");
-  $("checkinState").textContent = todayCheckin() ? "Sudah diisi, bisa diubah" : "Belum diisi hari ini";
+  $("checkinState").textContent = ciCheckin() ? "Sudah diisi, bisa diubah" : (isToday ? "Belum diisi hari ini" : "Belum diisi untuk " + shortDay(k));
 }
+$("ciDate").addEventListener("change", e => {
+  const v = e.target.value, t = Core.dayKey(today());
+  ciDay = !v || v >= t ? null : v; setMsg("checkinMsg", ""); fillCheckinForm();
+});
+$("ciToday").addEventListener("click", () => { ciDay = null; setMsg("checkinMsg", ""); fillCheckinForm(); });
 $("ciSore").addEventListener("click", e => { const b = e.target.closest("[data-v]"); if (!b) return; const v = +b.dataset.v; state.ci.soreness = state.ci.soreness === v ? null : v; renderScale("ciSore", SORE, "soreness"); });
 $("ciMood").addEventListener("click", e => { const b = e.target.closest("[data-v]"); if (!b) return; const v = +b.dataset.v; state.ci.mood = state.ci.mood === v ? null : v; renderScale("ciMood", MOOD, "mood"); });
 $("checkinForm").addEventListener("submit", async e => {
@@ -214,16 +225,24 @@ $("checkinForm").addEventListener("submit", async e => {
   if (Number.isNaN(bb) || (bb != null && (bb < 0 || bb > 100))) return setMsg("checkinMsg", "Body Battery antara 0 dan 100.");
   if (Number.isNaN(sl) || (sl != null && (sl < 0 || sl > 16))) return setMsg("checkinMsg", "Isi lama tidur dalam jam, misalnya 7,5.");
   if (Number.isNaN(rm) || (rm != null && (rm < 1 || rm > 300))) return setMsg("checkinMsg", "RMSSD biasanya antara 10 dan 150 ms.");
-  const old = todayCheckin() || {};
-  const row = { day: Core.dayKey(today()), rhr, body_battery: bb, sleep_h: sl, rmssd: rm, sdnn: old.sdnn ?? null, soreness: state.ci.soreness, mood: state.ci.mood, note: old.note ?? null,
+  const old = ciCheckin() || {};
+  const row = { day: ciKey(), rhr, body_battery: bb, sleep_h: sl, rmssd: rm, sdnn: old.sdnn ?? null, soreness: state.ci.soreness, mood: state.ci.mood, note: old.note ?? null,
     source: old.source && old.source !== "manual" ? "campuran" : "manual", updated_at: new Date().toISOString() };
   if ([rhr, bb, sl, rm, row.soreness, row.mood].every(v => v == null)) return setMsg("checkinMsg", "Isi minimal satu kolom dulu.");
   setMsg("checkinMsg", "Menyimpan…", true);
   const { error } = await sb.from("sl_checkins").upsert(row, { onConflict: "user_id,day" });
   if (error) return setMsg("checkinMsg", friendlyError(error));
   state.checkins = state.checkins.filter(c => c.day !== row.day).concat(row).sort((a, b) => a.day < b.day ? -1 : 1);
-  setMsg("checkinMsg", "Check-in tersimpan.", true); fillCheckinForm(); renderReady(); renderLoad(); renderCiTable(); renderProfileNote();
-  $("readyCard").scrollIntoView({ behavior: "smooth", block: "start" });
+  const savedToday = row.day === Core.dayKey(today());
+  if (savedToday) setMsg("checkinMsg", "Check-in tersimpan.", true);
+  else {
+    // isi mundur: lanjut otomatis ke hari berikutnya
+    const nx = Core.fromKey(row.day); nx.setDate(nx.getDate() + 1); const nk = Core.dayKey(nx);
+    ciDay = nk >= Core.dayKey(today()) ? null : nk;
+    setMsg("checkinMsg", `Check-in ${shortDay(row.day)} tersimpan. Lanjut ke ${shortDay(ciKey())}.`, true);
+  }
+  fillCheckinForm(); renderReady(); renderLoad(); renderCiTable(); renderProfileNote();
+  if (savedToday) $("readyCard").scrollIntoView({ behavior: "smooth", block: "start" });
 });
 
 /* ================= Tampilan: Lari ================= */

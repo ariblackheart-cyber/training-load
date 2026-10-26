@@ -154,3 +154,6 @@ fieldset.scale legend{font-size:13px;font-weight:700;padding:0;margin-bottom:6px
 .tbl th:first-child,.tbl td:first-child{text-align:left}
 @media (prefers-reduced-motion:reduce){.scale5 .em{transition:none}}
 
+.ci-date{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.ci-date label{font-size:13px;font-weight:700}
+.ci-date input{font:inherit;font-size:15px;padding:7px 10px;border:1px solid var(--line);border-radius:9px;background:var(--paper);color:var(--ink)}
